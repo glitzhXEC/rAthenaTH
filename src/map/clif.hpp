@@ -349,6 +349,26 @@ enum emotion_type {
 	ET_YUT5,
 	ET_YUT6,
 	ET_YUT7,
+	ET_CLICK_ME,
+	ET_DAILY_QUEST,
+	ET_EVENT,
+	ET_JOB_QUEST,
+	ET_TRAFFIC_LINE_QUEST,
+	ET_CUSTOM_1,
+	ET_CUSTOM_2,
+	ET_CUSTOM_3,
+	ET_CUSTOM_4,
+	ET_CUSTOM_5,
+	ET_CUSTOM_6,
+	ET_CUSTOM_7,
+	ET_CUSTOM_8,
+	ET_CUSTOM_9,
+	ET_CUSTOM_10,
+	ET_CUSTOM_11,
+	ET_CUSTOM_12,
+	ET_CUSTOM_13,
+	ET_CUSTOM_14,
+	ET_CUSTOM_15,
 	//
 	ET_MAX
 };
@@ -941,6 +961,11 @@ void clif_refresh_storagewindow(map_session_data *sd);
 void clif_refresh(map_session_data *sd);	// self
 
 void clif_emotion( const block_list& bl, emotion_type type );
+void clif_emotion_expansion_use_success( const block_list& bl, uint16 pack_id, uint16 emote_id );
+void clif_emotion_expansion_use_fail( map_session_data* sd, uint16 pack_id, uint16 emote_id, uint8 status );
+void clif_emotion_expansion_buy_success( map_session_data* sd, uint16 pack_id, bool is_rented, uint32 expiration_time );
+void clif_emotion_expansion_buy_fail( map_session_data* sd, uint16 pack_id, uint8 status );
+void clif_emotion_expansion_list( map_session_data* sd, const std::vector<PACKET_ZC_EMOTION_EXPANSION_LIST_sub>& list );
 void clif_talkiebox( const block_list* bl, const char* talkie );
 void clif_wedding_effect( const block_list& bl );
 void clif_divorced( const map_session_data& sd, const char* name );

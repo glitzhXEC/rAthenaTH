@@ -2032,9 +2032,74 @@ DEFINE_PACKET_HEADER(ZC_SKILLMSG, 0x215);
 
 struct PACKET_CZ_REQ_EMOTION_EXPANSION{
 	int16 packetType;
-	uint8 unknown[4];
+	uint16 packId;
+	uint16 emoteId;
 } __attribute__((packed));
 DEFINE_PACKET_HEADER(CZ_REQ_EMOTION_EXPANSION, 0xbe9);
+
+struct PACKET_ZC_EMOTION_SUCCESS {
+	int16 packetType;
+	uint32 GID;
+	uint16 packId;
+	uint16 emoteId;
+} __attribute__((packed));
+DEFINE_PACKET_HEADER(ZC_EMOTION_SUCCESS, 0xbea);
+
+struct PACKET_ZC_EMOTION_FAIL {
+	int16 packetType;
+	uint16 packId;
+	uint16 emoteId;
+	uint8 status;
+} __attribute__((packed));
+DEFINE_PACKET_HEADER(ZC_EMOTION_FAIL, 0xbeb);
+
+struct PACKET_CZ_REQ_EMOTION_EXPANSION_BUY{
+	int16 packetType;
+	uint16 packId;
+	uint16 itemId;
+	uint8 amount;
+} __attribute__((packed));
+DEFINE_PACKET_HEADER(CZ_REQ_EMOTION_EXPANSION_BUY, 0xbec);
+
+struct PACKET_ZC_EMOTION_EXPANSION_SUCCESS {
+	int16 packetType;
+	uint16 packId;
+	uint8 isRented;
+	uint32 timestamp;
+} __attribute__((packed));
+DEFINE_PACKET_HEADER(ZC_EMOTION_EXPANSION_SUCCESS, 0xbed);
+
+struct PACKET_ZC_EMOTION_EXPANSION_FAIL {
+	int16 packetType;
+	uint16 packId;
+	uint8 status;
+} __attribute__((packed));
+DEFINE_PACKET_HEADER(ZC_EMOTION_EXPANSION_FAIL, 0xbee);
+
+struct PACKET_ZC_EMOTION_EXPANSION_LIST_sub {
+	uint16 packId;
+	uint8 isRented;
+	uint32 timestamp;
+} __attribute__((packed));
+
+#if PACKETVER_MAIN_NUM >= 20230920
+struct PACKET_ZC_EMOTION_EXPANSION_LIST {
+	int16 packetType;
+	uint16 packetLength;
+	uint32 timestamp;
+	uint16 timezone;
+	PACKET_ZC_EMOTION_EXPANSION_LIST_sub list[];
+} __attribute__((packed));
+DEFINE_PACKET_HEADER(ZC_EMOTION_EXPANSION_LIST, 0xbf6);
+#else
+struct PACKET_ZC_EMOTION_EXPANSION_LIST {
+	int16 packetType;
+	uint16 packetLength;
+	uint32 timestamp;
+	PACKET_ZC_EMOTION_EXPANSION_LIST_sub list[];
+} __attribute__((packed));
+DEFINE_PACKET_HEADER(ZC_EMOTION_EXPANSION_LIST, 0xbef);
+#endif
 
 struct PACKET_ZC_DISAPPEAR_ENTRY{
 	int16 packetType;

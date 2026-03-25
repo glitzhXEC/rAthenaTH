@@ -2027,10 +2027,11 @@
 #endif
 
 #if PACKETVER_MAIN_NUM >= 20230705
-	parseable_packet( HEADER_CZ_REQ_EMOTION_EXPANSION, sizeof( struct PACKET_CZ_REQ_EMOTION_EXPANSION ), clif_parse_dull, 0 );
+	parseable_packet( HEADER_CZ_REQ_EMOTION_EXPANSION, sizeof( struct PACKET_CZ_REQ_EMOTION_EXPANSION ), clif_parse_emotion_expansion_use, 0 );
 #endif
 
 #if PACKETVER_MAIN_NUM >= 20230802
+	parseable_packet( HEADER_CZ_REQ_EMOTION_EXPANSION_BUY, sizeof( struct PACKET_CZ_REQ_EMOTION_EXPANSION_BUY ), clif_parse_emotion_expansion_buy, 0 );
 	parseable_packet( HEADER_CZ_QUEST_STATUS_REQ, -1, clif_parse_dull, 0 );
 #endif
 

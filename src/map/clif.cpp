@@ -36,6 +36,7 @@
 #include "clan.hpp"
 #include "clif.hpp"
 #include "elemental.hpp"
+#include "emotes.hpp"
 #include "guild.hpp"
 #include "homunculus.hpp"
 #include "instance.hpp"
@@ -10944,6 +10945,9 @@ void clif_parse_LoadEndAck(int32 fd,map_session_data *sd)
 			sd->state.night = 1;
 			clif_status_load(sd, EFST_SKE, 1);
 		}
+#if PACKETVER_MAIN_NUM >= 20230705
+		emotes_get_player_packs( sd );
+#endif
 
 		// Notify everyone that this char logged in.
 		if( battle_config.friend_auto_add ){
@@ -11665,6 +11669,110 @@ void clif_parse_Emotion(int32 fd, map_session_data *sd){
 		clif_emotion( *sd, emoticon );
 	} else
 		clif_skill_fail( *sd, 1, USESKILL_FAIL_LEVEL, 1 );
+}
+
+void clif_emotion_expansion_use_success( const block_list& bl, uint16 pack_id, uint16 emote_id ){
+#if PACKETVER_MAIN_NUM >= 20230705
+	PACKET_ZC_EMOTION_SUCCESS p = {};
+
+	p.packetType = HEADER_ZC_EMOTION_SUCCESS;
+	p.GID = bl.id;
+	p.packId = pack_id;
+	p.emoteId = emote_id;
+
+	clif_send( &p, sizeof( p ), &bl, AREA );
+#endif
+}
+
+void clif_emotion_expansion_use_fail( map_session_data* sd, uint16 pack_id, uint16 emote_id, uint8 status ){
+#if PACKETVER_MAIN_NUM >= 20230705
+	nullpo_retv( sd );
+
+	PACKET_ZC_EMOTION_FAIL p = {};
+
+	p.packetType = HEADER_ZC_EMOTION_FAIL;
+	p.packId = pack_id;
+	p.emoteId = emote_id;
+	p.status = status;
+
+	clif_send( &p, sizeof( p ), sd, SELF );
+#endif
+}
+
+void clif_emotion_expansion_buy_success( map_session_data* sd, uint16 pack_id, bool is_rented, uint32 expiration_time ){
+#if PACKETVER_MAIN_NUM >= 20230802
+	nullpo_retv( sd );
+
+	PACKET_ZC_EMOTION_EXPANSION_SUCCESS p = {};
+
+	p.packetType = HEADER_ZC_EMOTION_EXPANSION_SUCCESS;
+	p.packId = pack_id;
+	p.isRented = is_rented;
+	p.timestamp = expiration_time;
+
+	clif_send( &p, sizeof( p ), sd, SELF );
+#endif
+}
+
+void clif_emotion_expansion_buy_fail( map_session_data* sd, uint16 pack_id, uint8 status ){
+#if PACKETVER_MAIN_NUM >= 20230802
+	nullpo_retv( sd );
+
+	PACKET_ZC_EMOTION_EXPANSION_FAIL p = {};
+
+	p.packetType = HEADER_ZC_EMOTION_EXPANSION_FAIL;
+	p.packId = pack_id;
+	p.status = status;
+
+	clif_send( &p, sizeof( p ), sd, SELF );
+#endif
+}
+
+void clif_emotion_expansion_list( map_session_data* sd, const std::vector<PACKET_ZC_EMOTION_EXPANSION_LIST_sub>& list ){
+#if PACKETVER_MAIN_NUM >= 20230705
+	nullpo_retv( sd );
+
+	PACKET_ZC_EMOTION_EXPANSION_LIST* p = reinterpret_cast<PACKET_ZC_EMOTION_EXPANSION_LIST*>( packet_buffer );
+
+	p->packetType = HEADER_ZC_EMOTION_EXPANSION_LIST;
+	p->packetLength = sizeof( *p );
+	p->timestamp = static_cast<decltype( p->timestamp )>( time( nullptr ) );
+#if PACKETVER_MAIN_NUM >= 20230920
+	p->timezone = 60 * 9; // kRO UTC+9
+#endif
+
+	for( const PACKET_ZC_EMOTION_EXPANSION_LIST_sub& entry : list ){
+		if( ( static_cast<size_t>( p->packetLength ) + sizeof( entry ) ) > sizeof( packet_buffer ) ){
+			ShowWarning( "clif_emotion_expansion_list: Packet exceeded packet buffer for player \"%s\".\n", sd->status.name );
+			break;
+		}
+
+		p->list[( p->packetLength - sizeof( *p ) ) / sizeof( entry )] = entry;
+		p->packetLength += static_cast<decltype( p->packetLength )>( sizeof( entry ) );
+	}
+
+	clif_send( p, p->packetLength, sd, SELF );
+#endif
+}
+
+void clif_parse_emotion_expansion_use( int32 fd, map_session_data* sd ){
+#if PACKETVER_MAIN_NUM >= 20230705
+	nullpo_retv( sd );
+
+	const PACKET_CZ_REQ_EMOTION_EXPANSION* p = reinterpret_cast<PACKET_CZ_REQ_EMOTION_EXPANSION*>( RFIFOP( fd, 0 ) );
+
+	emotes_use( sd, p->packId, p->emoteId );
+#endif
+}
+
+void clif_parse_emotion_expansion_buy( int32 fd, map_session_data* sd ){
+#if PACKETVER_MAIN_NUM >= 20230802
+	nullpo_retv( sd );
+
+	const PACKET_CZ_REQ_EMOTION_EXPANSION_BUY* p = reinterpret_cast<PACKET_CZ_REQ_EMOTION_EXPANSION_BUY*>( RFIFOP( fd, 0 ) );
+
+	emotes_buy( sd, p->packId, p->itemId, p->amount );
+#endif
 }
 
 
