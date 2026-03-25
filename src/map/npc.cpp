@@ -321,66 +321,109 @@ uint64 StylistDatabase::parseBodyNode( const ryml::NodeRef& node ){
 						return 0;
 					}
 					break;
-				case LOOK_CLOTHES_COLOR:
-					if( !this->asUInt32( optionNode, "Value", value ) ){
-						return 0;
-					}
+					case LOOK_CLOTHES_COLOR:
+						if( !this->asUInt32( optionNode, "Value", value ) ){
+							return 0;
+						}
 
-					if( value < MIN_CLOTH_COLOR ){
-						this->invalidWarning( optionNode["Value"], "stylist_parseBodyNode: cloth color \"%u\" is too low...\n", value );
-						return 0;
-					}else if( value > MAX_CLOTH_COLOR ){
-						this->invalidWarning( optionNode["Value"], "stylist_parseBodyNode: cloth color \"%u\" is too high...\n", value );
-						return 0;
-					}
-					break;
-				case LOOK_BODY2:
-					if( !this->asUInt32( optionNode, "Value", value ) ){
-						return 0;
-					}
+						if( value < MIN_CLOTH_COLOR ){
+							this->invalidWarning( optionNode["Value"], "stylist_parseBodyNode: cloth color \"%u\" is too low...\n", value );
+							return 0;
+						}else if( value > MAX_CLOTH_COLOR ){
+							this->invalidWarning( optionNode["Value"], "stylist_parseBodyNode: cloth color \"%u\" is too high...\n", value );
+							return 0;
+						}
+						break;
+					case LOOK_BODY2: {
+							std::string body_style_name;
 
-					// TODO: Unsupported for now => This is job specific now
-#if 0
-					if( value < MIN_BODY_STYLE ){
-						this->invalidWarning( optionNode["Value"], "stylist_parseBodyNode: body style \"%u\" is too low...\n", value );
-						return 0;
-					}else if( value > MAX_BODY_STYLE ){
-						this->invalidWarning( optionNode["Value"], "stylist_parseBodyNode: body style \"%u\" is too high...\n", value );
-						return 0;
-					}
-#endif
-					break;
+							if( !this->asString( optionNode, "Value", body_style_name ) ){
+								return 0;
+							}
+
+							std::string body_style_name_constant = "JOB_" + body_style_name;
+							int64 body_style_constant;
+
+							if( script_get_constant( body_style_name_constant.c_str(), &body_style_constant ) ){
+								value = static_cast<decltype(value)>( body_style_constant );
+								break;
+							}
+
+							if( !this->asUInt32( optionNode, "Value", value ) ){
+								this->invalidWarning( optionNode["Value"], "stylist_parseBodyNode: Invalid body style \"%s\"...\n", body_style_name.c_str() );
+								return 0;
+							}
+						} break;
+				}
+
+				entry->value = value;
 			}
 
-			entry->value = value;
-		}
+			if( this->nodeExists( optionNode, "RequiredJobs" ) ){
+				const ryml::NodeRef& required_jobs_node = optionNode["RequiredJobs"];
 
-		if( this->nodeExists( optionNode, "CostsHuman" ) ) {
-			if( !this->parseCostNode( entry, false, optionNode["CostsHuman"] ) ){
-				return 0;
+				for( const auto& required_job : required_jobs_node ){
+					std::string job_name;
+					c4::from_chars( required_job.key(), &job_name );
+
+					std::string job_name_constant = "JOB_" + job_name;
+					int64 job_constant;
+
+					if( !script_get_constant( job_name_constant.c_str(), &job_constant ) ){
+						this->invalidWarning( optionNode["RequiredJobs"], "Job %s does not exist.\n", job_name.c_str() );
+						return 0;
+					}
+
+					bool active;
+
+					if( !this->asBool( required_jobs_node, job_name, active ) ){
+						return 0;
+					}
+
+					uint16 job_id = static_cast<decltype(job_id)>( job_constant );
+
+					if( active ){
+						if( util::vector_exists( entry->required_jobs, job_id ) ){
+							this->invalidWarning( required_job, "Job \"%s\" is already required. Please check your data.\n", job_name.c_str() );
+							return 0;
+						}
+
+						entry->required_jobs.push_back( job_id );
+					}else{
+						if( !util::vector_erase_if_exists( entry->required_jobs, job_id ) ){
+							this->invalidWarning( required_job, "Job \"%s\" is not required. Please check your data.\n", job_name.c_str() );
+							return 0;
+						}
+					}
+				}
 			}
-		}else{
+
+			if( this->nodeExists( optionNode, "CostsHuman" ) ) {
+				if( !this->parseCostNode( entry, false, optionNode["CostsHuman"] ) ){
+					return 0;
+				}
+			}else{
+				if( !entry_exists ){
+					entry->human = nullptr;
+				}
+			}
+
+			if( this->nodeExists( optionNode, "CostsDoram" ) ) {
+				if( !this->parseCostNode( entry, true, optionNode["CostsDoram"] ) ){
+					return 0;
+				}
+			}else{
+				if( !entry_exists ){
+					entry->doram = nullptr;
+				}
+			}
+
 			if( !entry_exists ){
-				entry->human = nullptr;
+				list->entries[index] = entry;
 			}
-		}
 
-		if( this->nodeExists( optionNode, "CostsDoram" ) ) {
-			if( !this->parseCostNode( entry, true, optionNode["CostsDoram"] ) ){
-				return 0;
-			}
-		}else{
-			if( !entry_exists ){
-				entry->doram = nullptr;
-			}
+			count++;
 		}
-
-		if( !entry_exists ){
-			list->entries[index] = entry;
-		}
-
-		count++;
-	}
 
 	if( !exists ){
 		this->put( (uint32)constant, list );

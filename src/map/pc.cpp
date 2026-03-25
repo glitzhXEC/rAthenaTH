@@ -1355,8 +1355,13 @@ void pc_makesavestatus(map_session_data *sd) {
 	if(!battle_config.save_clothcolor)
 		sd->status.clothes_color = 0;
 
-	if(!battle_config.save_body_style)
+	if( !battle_config.save_body_style ){
+#if PACKETVER >= 20231220
+		sd->status.body = sd->status.class_;
+#else
 		sd->status.body = 0;
+#endif
+	}
 
 	//Only copy the Cart/Peco/Falcon options, the rest are handled via
 	//status change load/saving. [Skotlex]
@@ -2112,7 +2117,11 @@ bool pc_authok(map_session_data *sd, uint32 login_id2, time_t expiration_time, i
 	sd->status.clothes_color = cap_value(sd->status.clothes_color,MIN_CLOTH_COLOR,MAX_CLOTH_COLOR);
 
 	if( !job_db.exists( sd->status.body ) ){
-		sd->status.body = sd->status.class_;
+		std::shared_ptr<s_job_info> job = job_db.find( sd->status.class_ );
+
+		if( job == nullptr || !util::vector_exists( job->alternate_outfits, sd->status.body ) ){
+			sd->status.body = sd->status.class_;
+		}
 	}
 
 	//Initializations to null/0 unneeded since map_session_data was filled with 0 upon allocation.
@@ -11120,7 +11129,11 @@ void pc_changelook(map_session_data *sd,int32 type,int32 val) {
 		break;
 	case LOOK_BODY2:
 		if( !job_db.exists( val ) ){
-			return;
+			std::shared_ptr<s_job_info> job = job_db.find( sd->status.class_ );
+
+			if( job == nullptr || !util::vector_exists( job->alternate_outfits, val ) ){
+				return;
+			}
 		}
 
 		sd->status.body = val;
